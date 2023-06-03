@@ -2,6 +2,7 @@ package io.github.wulkanowy.ui.modules.timetable
 
 import io.github.wulkanowy.data.*
 import io.github.wulkanowy.data.db.entities.Timetable
+import io.github.wulkanowy.data.enums.TimetableGapsMode
 import io.github.wulkanowy.data.enums.TimetableMode
 import io.github.wulkanowy.data.repositories.PreferencesRepository
 import io.github.wulkanowy.data.repositories.SemesterRepository
@@ -191,18 +192,34 @@ class TimetablePresenter @Inject constructor(
             }.sortedWith(
                 compareBy({ item -> item.number }, { item -> !item.isStudentPlan })
             )
-
-        return filteredItems.mapIndexed { i, it ->
-            if (it.isStudentPlan) TimetableItem.Normal(
-                lesson = it,
-                showGroupsInPlan = prefRepository.showGroupsInPlan,
-                timeLeft = filteredItems.getTimeLeftForLesson(it, i),
-                onClick = ::onTimetableItemSelected
-            ) else TimetableItem.Small(
-                lesson = it,
-                onClick = ::onTimetableItemSelected
+        var prevNum: Int? =
+            if (prefRepository.showTimetableGaps == TimetableGapsMode.BETWEEN_AND_BEFORE_LESSONS) 0 else null
+        val finalItems: MutableList<TimetableItem> = mutableListOf()
+        filteredItems.forEachIndexed { i: Int, it: Timetable ->
+            prevNum?.let { prevNum: Int ->
+                if (prefRepository.showTimetableGaps != TimetableGapsMode.NO_GAPS && it.number > prevNum + 1) {
+                    finalItems.add(
+                        TimetableItem.Empty(
+                            numFrom = prevNum + 1,
+                            numTo = it.number - 1
+                        )
+                    )
+                }
+            }
+            finalItems.add(
+                if (it.isStudentPlan) TimetableItem.Normal(
+                    lesson = it,
+                    showGroupsInPlan = prefRepository.showGroupsInPlan,
+                    timeLeft = filteredItems.getTimeLeftForLesson(it, i),
+                    onClick = ::onTimetableItemSelected
+                ) else TimetableItem.Small(
+                    lesson = it,
+                    onClick = ::onTimetableItemSelected
+                )
             )
+            prevNum = it.number
         }
+        return finalItems
     }
 
     private fun List<Timetable>.getTimeLeftForLesson(lesson: Timetable, index: Int): TimeLeft {
