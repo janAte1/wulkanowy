@@ -192,6 +192,7 @@ class TimetablePresenter @Inject constructor(
             }.sortedWith(
                 compareBy({ item -> item.number }, { item -> !item.isStudentPlan })
             )
+
         var prevNum = when (prefRepository.showTimetableGaps) {
             TimetableGapsMode.BETWEEN_AND_BEFORE_LESSONS -> 0
             else -> null

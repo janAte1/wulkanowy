@@ -5,11 +5,11 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="@drawable/background_widget_item_timetable"
-    android:backgroundTint="?attr/backgroundColor"
+    android:backgroundTint="?attr/colorSurface"
     android:gravity="center_vertical"
     android:orientation="horizontal"
-    android:paddingHorizontal="16dp"
-    android:paddingVertical="12dp"
+    android:paddingHorizontal="12dp"
+    android:paddingVertical="8dp"
     android:theme="@style/Wulkanowy.Widget.Theme"
     tools:context=".ui.modules.timetablewidget.TimetableWidgetFactory">
 
@@ -19,7 +19,7 @@
         android:layout_height="wrap_content"
         android:textAppearance="?attr/textAppearanceHeadline6"
         android:textColor="?android:textColorHint"
-        android:textSize="24sp"
+        android:textSize="22sp"
         tools:text="1-4" />
 
     <TextView
