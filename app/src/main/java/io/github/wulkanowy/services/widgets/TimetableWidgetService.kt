@@ -33,13 +33,13 @@ class TimetableWidgetService : RemoteViewsService() {
     override fun onGetViewFactory(intent: Intent?): RemoteViewsFactory {
         Timber.d("TimetableWidgetFactory created")
         return TimetableWidgetFactory(
-            timetableRepo,
-            studentRepo,
-            semesterRepo,
-            sharedPref,
-            prefRepository,
-            applicationContext,
-            intent
+            timetableRepository = timetableRepo,
+            studentRepository = studentRepo,
+            semesterRepository = semesterRepo,
+            sharedPref = sharedPref,
+            prefRepository = prefRepository,
+            context = applicationContext,
+            intent = intent,
         )
     }
 }

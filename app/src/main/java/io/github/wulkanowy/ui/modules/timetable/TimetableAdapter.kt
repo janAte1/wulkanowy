@@ -1,6 +1,5 @@
 package io.github.wulkanowy.ui.modules.timetable
 
-import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.View.GONE
 import android.view.View.VISIBLE
@@ -37,11 +36,9 @@ class TimetableAdapter @Inject constructor() :
                 ItemTimetableBinding.inflate(inflater, parent, false)
             )
 
-            TimetableItemType.EMPTY -> {
-                EmptyViewHolder(
-                    ItemTimetableEmptyBinding.inflate(inflater, parent, false)
-                )
-            }
+            TimetableItemType.EMPTY -> EmptyViewHolder(
+                ItemTimetableEmptyBinding.inflate(inflater, parent, false)
+            )
         }
     }
 
@@ -50,12 +47,12 @@ class TimetableAdapter @Inject constructor() :
         position: Int,
         payloads: MutableList<Any>
     ) {
-        if (payloads.isEmpty()) return super.onBindViewHolder(holder, position, payloads)
-
-        if (holder is NormalViewHolder) updateTimeLeft(
-            binding = holder.binding,
-            timeLeft = (getItem(position) as TimetableItem.Normal).timeLeft,
-        )
+        if (payloads.isNotEmpty() && holder is NormalViewHolder) {
+            updateTimeLeft(
+                binding = holder.binding,
+                timeLeft = (getItem(position) as TimetableItem.Normal).timeLeft,
+            )
+        } else super.onBindViewHolder(holder, position, payloads)
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
@@ -116,20 +113,16 @@ class TimetableAdapter @Inject constructor() :
         }
     }
 
-    @SuppressLint("SetTextI18n")
     private fun bindEmptyView(binding: ItemTimetableEmptyBinding, item: TimetableItem.Empty) {
-
         with(binding) {
-            if (item.numFrom == item.numTo) {
-                timetableEmptyItemNumber.text = item.numFrom.toString()
-            } else {
-                timetableEmptyItemNumber.text = "${item.numFrom}-${item.numTo}"
+            timetableEmptyItemNumber.text = when (item.numFrom) {
+                item.numTo -> item.numFrom.toString()
+                else -> "${item.numFrom}-${item.numTo}"
             }
             timetableEmptyItemSubject.text = timetableEmptyItemSubject.context.getPlural(
                 R.plurals.timetable_no_lesson,
                 item.numTo - item.numFrom + 1
             )
-            root.setOnClickListener {}
         }
     }
 

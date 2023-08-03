@@ -6,7 +6,6 @@ enum class TimetableGapsMode(val value: String) {
     BETWEEN_AND_BEFORE_LESSONS("before_and_between");
 
     companion object {
-        fun getByValue(value: String) =
-            TimetableGapsMode.values().find { it.value == value } ?: BETWEEN_LESSONS
+        fun getByValue(value: String) = entries.find { it.value == value } ?: BETWEEN_LESSONS
     }
 }

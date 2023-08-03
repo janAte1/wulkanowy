@@ -192,10 +192,12 @@ class TimetablePresenter @Inject constructor(
             }.sortedWith(
                 compareBy({ item -> item.number }, { item -> !item.isStudentPlan })
             )
-        var prevNum: Int? =
-            if (prefRepository.showTimetableGaps == TimetableGapsMode.BETWEEN_AND_BEFORE_LESSONS) 0 else null
-        val finalItems: MutableList<TimetableItem> = mutableListOf()
-        filteredItems.forEachIndexed { i: Int, it: Timetable ->
+        var prevNum = when (prefRepository.showTimetableGaps) {
+            TimetableGapsMode.BETWEEN_AND_BEFORE_LESSONS -> 0
+            else -> null
+        }
+        val finalItems = mutableListOf<TimetableItem>()
+        filteredItems.forEachIndexed { i, it ->
             prevNum?.let { prevNum: Int ->
                 if (prefRepository.showTimetableGaps != TimetableGapsMode.NO_GAPS && it.number > prevNum + 1) {
                     finalItems.add(
