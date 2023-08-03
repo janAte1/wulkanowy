@@ -242,6 +242,7 @@ class TimetablePresenter @Inject constructor(
                     )
                     add(smallLesson)
                 }
+
                 prevNum = it.number
             }
         }

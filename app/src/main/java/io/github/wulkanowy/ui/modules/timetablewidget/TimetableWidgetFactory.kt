@@ -16,7 +16,8 @@ import io.github.wulkanowy.data.db.SharedPrefProvider
 import io.github.wulkanowy.data.db.entities.Semester
 import io.github.wulkanowy.data.db.entities.Student
 import io.github.wulkanowy.data.db.entities.Timetable
-import io.github.wulkanowy.data.enums.TimetableGapsMode
+import io.github.wulkanowy.data.enums.TimetableGapsMode.BETWEEN_AND_BEFORE_LESSONS
+import io.github.wulkanowy.data.enums.TimetableGapsMode.NO_GAPS
 import io.github.wulkanowy.data.repositories.PreferencesRepository
 import io.github.wulkanowy.data.repositories.SemesterRepository
 import io.github.wulkanowy.data.repositories.StudentRepository
@@ -106,24 +107,23 @@ class TimetableWidgetFactory(
     }
 
     private fun createItems(lessons: List<Timetable>): List<TimetableWidgetItem> {
-        var prevNum: Int? =
-            if (prefRepository.showTimetableGaps == TimetableGapsMode.BETWEEN_AND_BEFORE_LESSONS) 0 else null
-        val items: MutableList<TimetableWidgetItem> = mutableListOf()
-        lessons.forEach {
-            prevNum?.let { prevNum: Int ->
-                if (prefRepository.showTimetableGaps != TimetableGapsMode.NO_GAPS && it.number > prevNum + 1) {
-                    items.add(
-                        TimetableWidgetItem.Empty(
-                            numFrom = prevNum + 1,
-                            numTo = it.number - 1
-                        )
-                    )
-                }
-            }
-            items.add(TimetableWidgetItem.Normal(it))
-            prevNum = it.number
+        var prevNum = when (prefRepository.showTimetableGaps) {
+            BETWEEN_AND_BEFORE_LESSONS -> 0
+            else -> null
         }
-        return items
+        return buildList {
+            lessons.forEach {
+                if (prefRepository.showTimetableGaps != NO_GAPS && prevNum != null && it.number > prevNum!! + 1) {
+                    val emptyItem = TimetableWidgetItem.Empty(
+                        numFrom = prevNum!! + 1,
+                        numTo = it.number - 1
+                    )
+                    add(emptyItem)
+                }
+                add(TimetableWidgetItem.Normal(it))
+                prevNum = it.number
+            }
+        }
     }
 
     private fun updateTodayLastLessonEnd(appWidgetId: Int) {
