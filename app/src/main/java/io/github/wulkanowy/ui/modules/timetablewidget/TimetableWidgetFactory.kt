@@ -52,16 +52,11 @@ class TimetableWidgetFactory(
 
     private var timetableChangeColor: Int? = null
 
-    private var lastSyncInstant: Instant? = null
-
     override fun getLoadingView() = null
 
     override fun hasStableIds() = true
 
-    override fun getCount() = when {
-        items.isEmpty() -> 0
-        else -> items.size + 1
-    }
+    override fun getCount() = items.size
 
     override fun getViewTypeCount() = 3
 
@@ -80,9 +75,10 @@ class TimetableWidgetFactory(
                 runBlocking {
                     val student = getStudent(studentId) ?: return@runBlocking
                     val semester = semesterRepository.getCurrentSemester(student)
-                    items = createItems(getLessons(student, semester, date))
-                    lastSyncInstant =
-                        timetableRepository.getLastRefreshTimestamp(semester, date, date)
+                    items = createItems(
+                        lessons = getLessons(student, semester, date),
+                        lastSync = timetableRepository.getLastRefreshTimestamp(semester, date, date)
+                    )
                     if (date == LocalDate.now()) {
                         updateTodayLastLessonEnd(appWidgetId)
                     }
@@ -106,7 +102,10 @@ class TimetableWidgetFactory(
         return lessons.sortedBy { it.number }
     }
 
-    private fun createItems(lessons: List<Timetable>): List<TimetableWidgetItem> {
+    private fun createItems(
+        lessons: List<Timetable>,
+        lastSync: Instant?,
+    ): List<TimetableWidgetItem> {
         var prevNum = when (prefRepository.showTimetableGaps) {
             BETWEEN_AND_BEFORE_LESSONS -> 0
             else -> null
@@ -123,6 +122,7 @@ class TimetableWidgetFactory(
                 add(TimetableWidgetItem.Normal(it))
                 prevNum = it.number
             }
+            add(TimetableWidgetItem.Synchronized(lastSync ?: Instant.MIN))
         }
     }
 
@@ -138,73 +138,78 @@ class TimetableWidgetFactory(
     }
 
     override fun getViewAt(position: Int): RemoteViews? {
-        if (position == items.size) {
-            val synchronizationInstant = lastSyncInstant ?: Instant.MIN
-            val synchronizationText = getSynchronizationInfoText(synchronizationInstant)
-            return RemoteViews(context.packageName, R.layout.item_widget_timetable_footer).apply {
-                setTextViewText(R.id.timetableWidgetSynchronizationTime, synchronizationText)
-            }
+        return when (val item = items.getOrNull(position) ?: return null) {
+            is TimetableWidgetItem.Normal -> getNormalItemRemoteView(item)
+            is TimetableWidgetItem.Empty -> getEmptyItemRemoteView(item)
+            is TimetableWidgetItem.Synchronized -> getSynchronizedItemRemoteView(item)
         }
-        val item = items.getOrNull(position) ?: return null
-        when (item) {
-            is TimetableWidgetItem.Normal -> {
-                val lesson = item.lesson
-                val lessonStartTime = lesson.start.toFormattedString(TIME_FORMAT_STYLE)
-                val lessonEndTime = lesson.end.toFormattedString(TIME_FORMAT_STYLE)
+    }
 
-                val remoteViews =
-                    RemoteViews(context.packageName, R.layout.item_widget_timetable).apply {
-                        setTextViewText(R.id.timetableWidgetItemNumber, lesson.number.toString())
-                        setTextViewText(R.id.timetableWidgetItemTimeStart, lessonStartTime)
-                        setTextViewText(R.id.timetableWidgetItemTimeFinish, lessonEndTime)
-                        setTextViewText(R.id.timetableWidgetItemSubject, lesson.subject)
+    private fun getNormalItemRemoteView(item: TimetableWidgetItem.Normal): RemoteViews {
+        val lesson = item.lesson
 
-                        setTextViewText(R.id.timetableWidgetItemTeacher, lesson.teacher)
-                        setTextViewText(R.id.timetableWidgetItemDescription, lesson.info)
-                        setOnClickFillInIntent(R.id.timetableWidgetItemContainer, Intent())
-                    }
-                updateTheme()
-                clearLessonStyles(remoteViews)
-                if (lesson.room.isBlank()) {
-                    remoteViews.setViewVisibility(R.id.timetableWidgetItemRoom, GONE)
-                } else {
-                    remoteViews.setTextViewText(R.id.timetableWidgetItemRoom, lesson.room)
-                }
-                when {
-                    lesson.canceled -> applyCancelledLessonStyles(remoteViews)
-                    lesson.changes or lesson.info.isNotBlank() -> applyChangedLessonStyles(
-                        remoteViews, lesson
-                    )
-                }
-                return remoteViews
-            }
+        val lessonStartTime = lesson.start.toFormattedString(TIME_FORMAT_STYLE)
+        val lessonEndTime = lesson.end.toFormattedString(TIME_FORMAT_STYLE)
 
-            is TimetableWidgetItem.Empty -> {
-                return RemoteViews(
-                    context.packageName,
-                    R.layout.item_widget_timetable_empty
-                ).apply {
-                    if (item.numFrom == item.numTo) {
-                        setTextViewText(
-                            R.id.timetableWidgetEmptyItemNumber,
-                            item.numFrom.toString()
-                        )
-                    } else {
-                        setTextViewText(
-                            R.id.timetableWidgetEmptyItemNumber,
-                            "${item.numFrom}-${item.numTo}"
-                        )
-                    }
-                    setTextViewText(
-                        R.id.timetableWidgetEmptyItemText,
-                        context.getPlural(
-                            R.plurals.timetable_no_lesson,
-                            item.numTo - item.numFrom + 1
-                        )
-                    )
-                    setOnClickFillInIntent(R.id.timetableWidgetEmptyItemContainer, Intent())
+        val remoteViews = RemoteViews(context.packageName, R.layout.item_widget_timetable).apply {
+            setTextViewText(R.id.timetableWidgetItemNumber, lesson.number.toString())
+            setTextViewText(R.id.timetableWidgetItemTimeStart, lessonStartTime)
+            setTextViewText(R.id.timetableWidgetItemTimeFinish, lessonEndTime)
+            setTextViewText(R.id.timetableWidgetItemSubject, lesson.subject)
+
+            setTextViewText(R.id.timetableWidgetItemTeacher, lesson.teacher)
+            setTextViewText(R.id.timetableWidgetItemDescription, lesson.info)
+            setOnClickFillInIntent(R.id.timetableWidgetItemContainer, Intent())
+        }
+        updateTheme()
+        clearLessonStyles(remoteViews)
+        if (lesson.room.isBlank()) {
+            remoteViews.setViewVisibility(R.id.timetableWidgetItemRoom, GONE)
+        } else {
+            remoteViews.setTextViewText(R.id.timetableWidgetItemRoom, lesson.room)
+        }
+        when {
+            lesson.canceled -> applyCancelledLessonStyles(remoteViews)
+            lesson.changes or lesson.info.isNotBlank() -> applyChangedLessonStyles(
+                remoteViews = remoteViews,
+                lesson = lesson,
+            )
+        }
+        return remoteViews
+    }
+
+    private fun getEmptyItemRemoteView(item: TimetableWidgetItem.Empty): RemoteViews {
+        return RemoteViews(
+            context.packageName,
+            R.layout.item_widget_timetable_empty
+        ).apply {
+            setTextViewText(
+                R.id.timetableWidgetEmptyItemNumber,
+                when (item.numFrom) {
+                    item.numTo -> item.numFrom.toString()
+                    else -> "${item.numFrom}-${item.numTo}"
                 }
-            }
+            )
+            setTextViewText(
+                R.id.timetableWidgetEmptyItemText,
+                context.getPlural(
+                    R.plurals.timetable_no_lesson,
+                    item.numTo - item.numFrom + 1
+                )
+            )
+            setOnClickFillInIntent(R.id.timetableWidgetEmptyItemContainer, Intent())
+        }
+    }
+
+    private fun getSynchronizedItemRemoteView(item: TimetableWidgetItem.Synchronized): RemoteViews {
+        return RemoteViews(
+            context.packageName,
+            R.layout.item_widget_timetable_footer
+        ).apply {
+            setTextViewText(
+                R.id.timetableWidgetSynchronizationTime,
+                getSynchronizationInfoText(item.timestamp)
+            )
         }
     }
 

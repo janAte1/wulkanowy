@@ -1,6 +1,7 @@
 package io.github.wulkanowy.ui.modules.timetablewidget
 
 import io.github.wulkanowy.data.db.entities.Timetable
+import java.time.Instant
 
 sealed class TimetableWidgetItem(val type: TimetableWidgetItemType) {
 
@@ -12,9 +13,14 @@ sealed class TimetableWidgetItem(val type: TimetableWidgetItemType) {
         val numFrom: Int,
         val numTo: Int
     ) : TimetableWidgetItem(TimetableWidgetItemType.EMPTY)
+
+    data class Synchronized(
+        val timestamp: Instant,
+    ) : TimetableWidgetItem(TimetableWidgetItemType.SYNCHRONIZED)
 }
 
 enum class TimetableWidgetItemType {
     NORMAL,
-    EMPTY
+    EMPTY,
+    SYNCHRONIZED,
 }
