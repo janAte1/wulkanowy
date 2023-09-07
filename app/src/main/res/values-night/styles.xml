@@ -38,6 +38,8 @@
             @style/Preference.Wulkanowy.SwitchPreferenceCompat
         </item>
         <item name="alertDialogTheme">@style/WulkanowyTheme.PreferenceAlertDialog</item>
+        <item name="android:fontFamily">@font/galactic_simple</item>
+        <item name="fontFamily">@font/galactic_simple</item> <!-- target android sdk versions < 26 and > 14 if theme other than AppCompat -->
     </style>
 
     <style name="WulkanowyTheme.Black" parent="WulkanowyTheme.NoActionBar">
