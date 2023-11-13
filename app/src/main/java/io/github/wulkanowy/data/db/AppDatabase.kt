@@ -20,6 +20,7 @@ import javax.inject.Singleton
         AttendanceSummary::class,
         Grade::class,
         GradeSummary::class,
+        GradeHistoryEntry::class,
         GradePartialStatistics::class,
         GradePointsStatistics::class,
         GradeSemesterStatistics::class,
@@ -51,6 +52,7 @@ import javax.inject.Singleton
         AutoMigration(from = 54, to = 55, spec = Migration55::class),
         AutoMigration(from = 55, to = 56),
         AutoMigration(from = 56, to = 57, spec = Migration57::class),
+        AutoMigration(from = 57, to = 58)
     ],
     version = AppDatabase.VERSION_SCHEMA,
     exportSchema = true
@@ -59,7 +61,7 @@ import javax.inject.Singleton
 abstract class AppDatabase : RoomDatabase() {
 
     companion object {
-        const val VERSION_SCHEMA = 57
+        const val VERSION_SCHEMA = 58
 
         fun getMigrations(sharedPrefProvider: SharedPrefProvider, appInfo: AppInfo) = arrayOf(
             Migration2(),
@@ -138,6 +140,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract val attendanceSummaryDao: AttendanceSummaryDao
 
     abstract val gradeDao: GradeDao
+
+    abstract val gradeHistoryDao: GradeHistoryDao
 
     abstract val gradeSummaryDao: GradeSummaryDao
 

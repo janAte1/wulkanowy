@@ -7,10 +7,10 @@ import android.view.MenuItem
 import android.view.View
 import android.view.View.INVISIBLE
 import android.view.View.VISIBLE
-import androidx.appcompat.app.AlertDialog
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.tabs.TabLayoutMediator
 import dagger.hilt.android.AndroidEntryPoint
+import io.github.wulkanowy.ui.modules.grade.history.GradeHistoryFragment
 import io.github.wulkanowy.R
 import io.github.wulkanowy.data.db.entities.Semester
 import io.github.wulkanowy.databinding.FragmentGradeBinding
@@ -34,7 +34,7 @@ class GradeFragment : BaseFragment<FragmentGradeBinding>(R.layout.fragment_grade
     private val pagerAdapter by lazy {
         BaseFragmentPagerAdapter(
             fragmentManager = childFragmentManager,
-            pagesCount = 3,
+            pagesCount = 4,
             lifecycle = lifecycle,
         )
     }
@@ -73,7 +73,7 @@ class GradeFragment : BaseFragment<FragmentGradeBinding>(R.layout.fragment_grade
     override fun initView() {
         with(binding.gradeViewPager) {
             adapter = pagerAdapter
-            offscreenPageLimit = 3
+            offscreenPageLimit = 4
             setOnSelectPageListener(presenter::onPageSelected)
         }
 
@@ -84,6 +84,7 @@ class GradeFragment : BaseFragment<FragmentGradeBinding>(R.layout.fragment_grade
                     0 -> getString(R.string.all_details)
                     1 -> getString(R.string.grade_menu_summary)
                     2 -> getString(R.string.grade_menu_statistics)
+                    3 -> getString(R.string.grade_menu_history)
                     else -> throw IllegalStateException()
                 }
             }
@@ -92,6 +93,7 @@ class GradeFragment : BaseFragment<FragmentGradeBinding>(R.layout.fragment_grade
                     0 -> GradeDetailsFragment.newInstance()
                     1 -> GradeSummaryFragment.newInstance()
                     2 -> GradeStatisticsFragment.newInstance()
+                    3 -> GradeHistoryFragment.newInstance()
                     else -> throw IllegalStateException()
                 }
             }

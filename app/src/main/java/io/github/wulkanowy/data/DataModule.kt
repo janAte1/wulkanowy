@@ -145,6 +145,10 @@ internal class DataModule {
 
     @Singleton
     @Provides
+    fun provideGradeHistoryDao(database: AppDatabase) = database.gradeHistoryDao
+
+    @Singleton
+    @Provides
     fun provideGradeSummaryDao(database: AppDatabase) = database.gradeSummaryDao
 
     @Singleton

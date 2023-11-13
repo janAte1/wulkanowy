@@ -1,8 +1,10 @@
 package io.github.wulkanowy.data.repositories
 
+import io.github.wulkanowy.data.db.dao.GradeHistoryDao
 import io.github.wulkanowy.data.db.dao.GradePartialStatisticsDao
 import io.github.wulkanowy.data.db.dao.GradePointsStatisticsDao
 import io.github.wulkanowy.data.db.dao.GradeSemesterStatisticsDao
+import io.github.wulkanowy.data.db.entities.GradeHistoryEntry
 import io.github.wulkanowy.data.db.entities.GradePartialStatistics
 import io.github.wulkanowy.data.db.entities.GradeSemesterStatistics
 import io.github.wulkanowy.data.db.entities.Semester
@@ -18,7 +20,8 @@ import io.github.wulkanowy.utils.getRefreshKey
 import io.github.wulkanowy.utils.init
 import io.github.wulkanowy.utils.uniqueSubtract
 import kotlinx.coroutines.sync.Mutex
-import java.util.*
+import java.time.Instant
+import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -27,6 +30,7 @@ class GradeStatisticsRepository @Inject constructor(
     private val gradePartialStatisticsDb: GradePartialStatisticsDao,
     private val gradePointsStatisticsDb: GradePointsStatisticsDao,
     private val gradeSemesterStatisticsDb: GradeSemesterStatisticsDao,
+    private val gradeHistoryDb: GradeHistoryDao,
     private val sdk: Sdk,
     private val refreshHelper: AutoRefreshHelper,
 ) {
@@ -61,6 +65,27 @@ class GradeStatisticsRepository @Inject constructor(
                 .mapToEntities(semester)
         },
         saveFetchResult = { old, new ->
+            for (item in new uniqueSubtract old) {
+                val oldItem = old.find { it.subject == item.subject }
+                oldItem?.let {
+                    if (it.classAmounts.size != item.classAmounts.size) {
+                        return@let
+                    }
+                    val diff =
+                        item.classAmounts.mapIndexed { index, amount -> amount - it.classAmounts[index] }
+                    gradeHistoryDb.insertAll(
+                        listOf(
+                            GradeHistoryEntry(
+                                Instant.now(),
+                                item.subject,
+                                item.studentId,
+                                item.semesterId,
+                                diff
+                            )
+                        )
+                    )
+                }
+            }
             gradePartialStatisticsDb.deleteAll(old uniqueSubtract new)
             gradePartialStatisticsDb.insertAll(new uniqueSubtract old)
             refreshHelper.updateLastRefreshTimestamp(getRefreshKey(partialCacheKey, semester))
@@ -79,6 +104,7 @@ class GradeStatisticsRepository @Inject constructor(
                     )
                     listOf(summaryItem) + items
                 }
+
                 else -> items.filter { it.subject == subjectName }
             }.mapPartialToStatisticItems()
         }
@@ -137,6 +163,7 @@ class GradeStatisticsRepository @Inject constructor(
                     }
                     listOf(summaryItem) + itemsWithAverage
                 }
+
                 else -> itemsWithAverage.filter { it.subject == subjectName }
             }.mapSemesterToStatisticItems()
         }

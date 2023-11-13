@@ -844,4 +844,5 @@
     <string name="error_feature_disabled">Funkcja wyłączona przez szkołę</string>
     <string name="error_feature_not_available">Funkcja niedostępna. Zaloguj się w trybie innym niż Mobilne API</string>
     <string name="error_field_required">To pole jest wymagane</string>
+    <string name="grade_menu_history">Historia</string>
 </resources>
